@@ -1,12 +1,12 @@
 # KopyaQ Personas
 
-> \*\*Note on sources:\*\* For this activity our professor told us to skip the interview phase. Details marked \*(assumption)\* are based on my own experience as an MSU-IIT student who uses print shops near campus, not on formal interviews.
+> **Note on sources:** For this activity our professor told us to skip the interview phase. Details marked *(assumption)* are based on my own experience as an MSU-IIT student who uses print shops near campus, not on formal interviews.
 
-\---
+---
 
 ## Kyla, the person waiting
 
-> "I don't mind waiting. I just want to know if I still have time to buy lunch before it's my turn." \*(assumption)\*
+> "I don't mind waiting. I just want to know if I still have time to buy lunch before it's my turn." *(assumption)*
 
 |||
 |-|-|
@@ -20,7 +20,7 @@
 
 ### Scenario
 
-It is 9:20 AM and Kyla has a lab report due at 10:00. She arrives at the print shop near the campus gate and sees about ten students crowding the counter. She scans the QR code on the door, picks "Print (black and white)," enters 25 pages, and gets ticket #14. The screen says 6 people are ahead of her. She walks to the carinderia next door to buy bread, checking her phone while she waits in line there. When the status changes to *Called*, she walks back, picks up her printout, and makes it to class on time.
+It is 9:20 AM and Kyla has a lab report due at 10:00. She arrives at the print shop near the campus gate and sees about ten students crowding the counter. She scans the QR code on the door, picks “Print (black and white),” enters 25 pages, and gets ticket #14. The screen says 6 people are ahead of her. She walks to the carinderia next door to buy bread, checking her phone while she waits in line there. When the status changes to *Called*, she walks back to the counter, hands Ate Joy her flash drive, and waits a few minutes while the report prints. She pays, picks up her printout, and makes it to class on time.
 
 ### Top tasks in the app
 
@@ -38,11 +38,11 @@ It is 9:20 AM and Kyla has a lab report due at 10:00. She arrives at the print s
 3. Because she steps out of the shop while waiting, the status must update by itself without her refreshing.
 4. Because she is in a hurry at the door, the join form must be short: name, email, service, pages, and rush only.
 
-\---
+---
 
 ## Ate Joy, the staff member
 
-> "Everyone says 'Ate, ako na!' and I can't remember who came first." \*(assumption)\*
+> "Everyone says 'Ate, ako na!' and I can't remember who came first." *(assumption)*
 
 |||
 |-|-|
@@ -56,7 +56,7 @@ It is 9:20 AM and Kyla has a lab report due at 10:00. She arrives at the print s
 
 ### Scenario
 
-It is 7:45 AM on a Monday, the busiest time before first classes. Ate Joy has the KopyaQ dashboard open on the shop desktop. Twelve tickets are waiting. She filters to "Binding / lamination" to see how many binding jobs are lined up, then switches back to all services. When the printer finishes a job, she hands the papers over, clicks *Serve* on that row, and presses *Call next*. The next student's phone shows *Called* and they walk up to the counter. A student who joined earlier never shows up, so she marks them *No-show* and moves on.
+It is 7:45 AM on a Monday, the busiest time before first classes. Ate Joy has the KopyaQ dashboard open on the shop desktop. Six tickets are waiting. She filters to "Binding / lamination" to see how many binding jobs are lined up, then switches back to all services. When a student arrives at the counter after being called, she takes their file from a flash drive or Messenger, prints it, and hands the papers over. Then she clicks *Serve* on that row and presses *Call next*. The next student's phone shows *Called*, and they walk up to the counter. A student who joined earlier never shows up, so she marks them *No-show* and moves on.
 
 ### Top tasks in the app
 
