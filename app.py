@@ -28,9 +28,13 @@ TICKETS = [
      "pages": 1, "rush": False, "status": "waiting"},
 ]
 
+def find_ticket(ticket_id):
+    """Return the ticket with this number, or None."""
+    return next((t for t in TICKETS if t["number"] == ticket_id), None)
+
 
 @app.route("/")
-@app.route("/")
+
 def index():
     return render_template("index.html")
 
@@ -75,17 +79,32 @@ def join():
 def staff_dashboard():
     return "Staff dashboard coming soon"
 
-
-@app.route("/queue/<int:ticket_id>")
-
-
-@app.route("/queue/<int:ticket_id>")
+@app.get("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    # <int:ticket_id> only matches numbers, so /queue/abc returns 404.
-    return render_template("ticket.html", ticket_id=ticket_id)
+    t = find_ticket(ticket_id)
+    if t is None:
+        abort(404)
+    ahead = [x for x in TICKETS
+             if x["service_id"] == t["service_id"]
+             and x["status"] == "waiting"
+             and x["number"] < t["number"]]
+    service = next(s for s in SERVICES if s["id"] == t["service_id"])
+    return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
+
+
+@app.post("/queue/<int:ticket_id>/leave")
+def leave(ticket_id):
+    t = find_ticket(ticket_id)
+    if t is None:
+        abort(404)
+    if t["status"] in ("waiting", "called"):
+        t["status"] = "left"
+        flash(f"You left the queue. Ticket #{ticket_id} is cancelled.", "info")
+    return redirect(url_for("index"))
 
 
 @app.route("/hello")
+
 def hello():
     # The plain-string version from the Routes slide.
     return "Hello from KopyaQ!"
