@@ -1,9 +1,105 @@
 {% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.number }} · KopyaQ{% endblock %}
 
-{% block title %}Ticket #{{ ticket_id }} · ClinicQ{% endblock %}
+{% set badge = {
+  "waiting": ("Waiting", "text-bg-warning"),
+  "called": ("Called", "text-bg-success"),
+  "served": ("Served", "text-bg-secondary"),
+  "no-show": ("No-show", "text-bg-danger"),
+  "left": ("Left the queue", "text-bg-secondary"),
+} %}
 
 {% block content %}
-  <h2>Ticket #{{ ticket_id }}</h2>
-  <p>This page was built from the URL <code>/queue/{{ ticket_id }}</code>.</p>
-  <p><a href="{{ url_for('index') }}">&larr; Back to the queue</a></p>
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="h4 mb-0">Your ticket</h1>
+                    <p class="display-1 fw-bold mb-0"><span class="visually-hidden">Ticket number </span>#{{ ticket.number }}</p>
+        </div>
+
+        <div id="live-status" aria-live="polite" class="mt-3">
+          <p id="ahead-text" class="fs-2 fw-semibold mb-2">
+            {% if ticket.status == "called" %}
+              It's your turn. Go to the counter.
+            {% elif ticket.status != "waiting" %}
+              You are no longer in the line.
+            {% elif ahead == 0 %}
+              You're next!
+            {% elif ahead == 1 %}
+              1 person ahead of you
+            {% else %}
+              {{ ahead }} people ahead of you
+            {% endif %}
+          </p>
+          <p class="mb-0">
+            Status:
+            <span id="status-badge" class="badge fs-6 {{ badge[ticket.status][1] }}">{{ badge[ticket.status][0] }}</span>
+          </p>
+        </div>
+
+        <dl class="row mt-4 mb-0">
+          <dt class="col-5">Service</dt>
+          <dd class="col-7">{{ service.name }}</dd>
+          <dt class="col-5">Pages</dt>
+          <dd class="col-7">
+            {{ ticket.pages }}
+            {% if ticket.rush %}<span class="badge text-bg-dark ms-1">RUSH</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+
+    {% if ticket.status in ("waiting", "called") %}
+      <p class="text-center text-body-secondary small mt-3 mb-4">Updates automatically</p>
+      <form method="post" action="{{ url_for('leave', ticket_id=ticket.number) }}"
+            onsubmit="return confirm('Leave the queue? You will lose your place.');">
+        <button type="submit" class="btn btn-outline-dark w-100">Leave the queue</button>
+      </form>
+    {% else %}
+      <a class="btn btn-dark w-100 mt-4" href="{{ url_for('join_form') }}">Join the queue again</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const statusUrl = "{{ url_for('ticket_status', ticket_id=ticket.number) }}";
+  const BADGES = JSON.parse('{{ badge|tojson }}');
+  const startStatus = "{{ ticket.status }}";
+
+  function aheadText(status, ahead) {
+    if (status === "called") return "It's your turn. Go to the counter.";
+    if (status !== "waiting") return "You are no longer in the line.";
+    if (ahead === 0) return "You're next!";
+    if (ahead === 1) return "1 person ahead of you";
+    return `${ahead} people ahead of you`;
+  }
+
+  async function refreshStatus() {
+    try {
+      const res = await fetch(statusUrl);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Served, no-show or left: reload so the Leave button is swapped out
+      const active = ["waiting", "called"];
+      if (active.includes(startStatus) && !active.includes(data.status)) {
+        location.reload();
+        return;
+      }
+
+      const [label, cls] = BADGES[data.status];
+      const badgeEl = document.getElementById("status-badge");
+      badgeEl.textContent = label;
+      badgeEl.className = `badge fs-6 ${cls}`;
+      document.getElementById("ahead-text").textContent = aheadText(data.status, data.ahead);
+    } catch (err) {
+      console.warn("Could not refresh status", err);
+    }
+  }
+  setInterval(refreshStatus, 10000);
+</script>
 {% endblock %}
