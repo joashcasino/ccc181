@@ -134,6 +134,17 @@ def ticket(ticket_id):
     return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
 
 
+@app.get("/queue/<int:ticket_id>/status.json")
+def ticket_status(ticket_id):
+    t = find_ticket(ticket_id)
+    if t is None:
+        abort(404)
+    ahead = sum(1 for x in TICKETS
+                if x["service_id"] == t["service_id"]
+                and x["status"] == "waiting" and x["number"] < t["number"])
+    return {"status": t["status"], "ahead": ahead}
+
+
 @app.post("/queue/<int:ticket_id>/leave")
 def leave(ticket_id):
     t = find_ticket(ticket_id)

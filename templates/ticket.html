@@ -63,3 +63,43 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  const statusUrl = "{{ url_for('ticket_status', ticket_id=ticket.number) }}";
+  const BADGES = JSON.parse('{{ badge|tojson }}');
+  const startStatus = "{{ ticket.status }}";
+
+  function aheadText(status, ahead) {
+    if (status === "called") return "It's your turn. Go to the counter.";
+    if (status !== "waiting") return "You are no longer in the line.";
+    if (ahead === 0) return "You're next!";
+    if (ahead === 1) return "1 person ahead of you";
+    return `${ahead} people ahead of you`;
+  }
+
+  async function refreshStatus() {
+    try {
+      const res = await fetch(statusUrl);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Served, no-show or left: reload so the Leave button is swapped out
+      const active = ["waiting", "called"];
+      if (active.includes(startStatus) && !active.includes(data.status)) {
+        location.reload();
+        return;
+      }
+
+      const [label, cls] = BADGES[data.status];
+      const badgeEl = document.getElementById("status-badge");
+      badgeEl.textContent = label;
+      badgeEl.className = `badge fs-6 ${cls}`;
+      document.getElementById("ahead-text").textContent = aheadText(data.status, data.ahead);
+    } catch (err) {
+      console.warn("Could not refresh status", err);
+    }
+  }
+  setInterval(refreshStatus, 10000);
+</script>
+{% endblock %}
