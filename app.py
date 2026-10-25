@@ -35,9 +35,40 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/join")
+@app.get("/join")
 def join_form():
-    return render_template("join.html")
+    return render_template("join.html", services=SERVICES, form={})
+
+
+@app.post("/join")
+def join():
+    form = request.form
+    name = form.get("name", "").strip()
+    email = form.get("email", "").strip().lower()
+    service_id = form.get("service_id", type=int)
+    pages = form.get("pages", type=int)
+    rush = form.get("rush") == "yes"
+
+    errors = {}
+    if not name:
+        errors["name"] = "Enter your name."
+    if "@" not in email:
+        errors["email"] = "Enter a valid email address."
+    if service_id not in [s["id"] for s in SERVICES]:
+        errors["service_id"] = "Choose a service."
+    if pages is None or not 1 <= pages <= 1000:
+        errors["pages"] = "Enter the number of pages, from 1 to 1000."
+
+    if errors:
+        flash("Please fix the highlighted fields.", "danger")
+        return render_template("join.html", services=SERVICES, form=form, errors=errors), 400
+
+    number = TICKETS[-1]["number"] + 1 if TICKETS else 1
+    TICKETS.append({"number": number, "name": name, "email": email,
+                    "service_id": service_id, "pages": pages, "rush": rush,
+                    "status": "waiting"})
+    flash(f"You joined the queue. Your ticket is #{number}.", "success")
+    return redirect(url_for("ticket", ticket_id=number))
 
 
 @app.route("/staff")
