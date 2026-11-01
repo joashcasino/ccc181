@@ -64,8 +64,9 @@ Three tables are enough this week. FR-13 and FR-16 (paper size and paper stock) 
 | tickets | status | varchar(20) | NOT NULL DEFAULT 'waiting', CHECK (status IN ('waiting', 'called', 'served', 'no-show', 'left')) | Only the five statuses the Week 3 app uses |
 | tickets | created_at | timestamptz | NOT NULL DEFAULT now() | FR-10 and the order of the queue. Time zone safe, and set by the database, not by the browser |
 | tickets | called_at | timestamptz | NULL | FR-04: empty while a ticket is waiting, filled in when Ate Joy calls it |
+| tickets | (user_id, service_id) | partial unique index `uq_tickets_one_active` | UNIQUE (user_id, service_id) WHERE status IN ('waiting', 'called') | A customer can have only one active ticket per service. Stops a double tap or a second join from putting the same person in line twice. Served, no-show and left tickets do not count, so she can join again next week. Added after the self-review ([schema-review.md](schema-review.md), entry 1); not drawn in the ERD, because Chen notation has no symbol for it |
 
-Every required constraint type is used at least once: PRIMARY KEY (all three ids), FOREIGN KEY (user_id, service_id), NOT NULL (most columns), UNIQUE (users.email, services.name), CHECK (name, email, role, minutes_per_page, pages, status), and `timestamptz` (created_at, called_at).
+Every required constraint type is used at least once: PRIMARY KEY (all three ids), FOREIGN KEY (user_id, service_id), NOT NULL (most columns), UNIQUE (users.email, services.name, and the partial index on tickets), CHECK (name, email, role, minutes_per_page, pages, status), and `timestamptz` (created_at, called_at).
 
 ## 2d. ERD
 

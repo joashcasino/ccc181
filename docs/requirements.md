@@ -26,6 +26,7 @@
 | FR-14 | A staff member can see how many customers left before being served, per service, per day. | Should | **Yes** | Later |
 | FR-15 | A customer can switch the page to a larger text size. | Could | No | Later |
 | FR-16 ★ | A staff member can mark each paper size (Short, Long, A4) as in stock or out of stock, and a customer can see which sizes are available before joining. | Should | **Yes** | Later |
+| FR-17 | Only a signed-in staff member can open the staff dashboard and change tickets or services. | Must | **Yes** | Later (Week 11) |
 
 FR-01 to FR-07 keep the IDs used in the Week 3 personas and report.
 
