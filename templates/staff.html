@@ -73,6 +73,13 @@
                 <button type="submit" class="btn btn-sm btn-outline-danger"
                         aria-label="Mark ticket {{ t.id }} as no-show">No-show</button>
               </form>
+              <form method="post" class="d-inline"
+                    action="{{ url_for('delete_ticket', ticket_id=t.id) }}"
+                    data-confirm="Delete ticket #{{ t.id }} ({{ t.user.name }})? Only do this for a ticket made by mistake. It cannot be undone.">
+                {% if selected %}<input type="hidden" name="service_id" value="{{ selected }}">{% endif %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary"
+                        aria-label="Delete ticket {{ t.id }}">Delete</button>
+              </form>
             </td>
           </tr>
         {% endfor %}

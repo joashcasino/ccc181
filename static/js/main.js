@@ -7,3 +7,12 @@ if (joinForm) {
     button.textContent = "Getting your ticket…";
   });
 }
+
+// 9c: ask before sending any form marked data-confirm (hard delete)
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener("submit", (event) => {
+    if (!confirm(form.dataset.confirm)) {
+      event.preventDefault();
+    }
+  });
+});
