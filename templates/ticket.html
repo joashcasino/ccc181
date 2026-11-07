@@ -38,16 +38,17 @@
             <span id="status-badge" class="badge fs-6 {{ badge[ticket.status][1] }}">{{ badge[ticket.status][0] }}</span>
           </p>
         </div>
-
-        <dl class="row mt-4 mb-0">
-          <dt class="col-5">Pages</dt>
-          <dd class="col-7">
-            {{ ticket.pages }}
-            {% if ticket.is_rush %}<span class="badge text-bg-dark ms-1">RUSH</span>{% endif %}
-          </dd>
-          <dt class="col-5">Joined</dt>
-          <dd class="col-7">{{ ticket.created_at|local }}</dd>
-        </dl>
+          <dl class="row mt-4 mb-0">
+            <dt class="col-5">Service</dt>
+            <dd class="col-7">{{ service.name }}</dd>
+            <dt class="col-5">Pages</dt>
+            <dd class="col-7">
+              {{ ticket.pages }}
+              {% if ticket.is_rush %}<span class="badge text-bg-dark ms-1">RUSH</span>{% endif %}
+            </dd>
+            <dt class="col-5">Joined</dt>
+            <dd class="col-7">{{ ticket.created_at|local }}</dd>
+          </dl>
       </div>
     </div>
 
