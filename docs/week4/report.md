@@ -10,7 +10,7 @@
 | **Student ID** | 2023-0857 |
 | **Section** | CS3A |
 | **Date** | 2026-11-07 |
-| **Pull request** | [add the link after opening the pull request] |
+| **Pull request** | https://github.com/joashcasino/ccc181/pull/11 |
 
 PostgreSQL 17 runs in Docker Compose. I did not use the local PostgreSQL fallback.
 
