@@ -46,29 +46,17 @@ def seed():
     db.session.commit()
     print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
 
-# Sample data. Week 4 moves this into PostgreSQL.
-SERVICES = [
-    {"id": 1, "name": "Print (black and white)", "minutes_per_page": 0.2},
-    {"id": 2, "name": "Print (colored)", "minutes_per_page": 0.5},
-    {"id": 3, "name": "Photocopy", "minutes_per_page": 0.1},
-    {"id": 4, "name": "Binding / lamination", "minutes_per_page": 3},
-]
+    print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
 
-# Each ticket: number, name, email, service_id, pages, rush, status
-# status is one of: waiting, called, served, no-show
-TICKETS = [
-    {"number": 1, "name": "Ana", "email": "ana@g.msuiit.edu.ph", "service_id": 1,
-     "pages": 25, "rush": False, "status": "waiting"},
-    {"number": 2, "name": "Ben", "email": "ben@g.msuiit.edu.ph", "service_id": 2,
-     "pages": 4, "rush": True, "status": "waiting"},
-    {"number": 3, "name": "Cara", "email": "cara@g.msuiit.edu.ph", "service_id": 4,
-     "pages": 1, "rush": False, "status": "waiting"},
-]
+
+def all_services():
+    """Every service, A to Z. Used by the join form and the staff pages."""
+    return db.session.scalars(db.select(Service).order_by(Service.name)).all()
+
 
 def find_ticket(ticket_id):
     """Return the ticket with this number, or None."""
     return next((t for t in TICKETS if t["number"] == ticket_id), None)
-
 
 @app.route("/")
 
@@ -78,7 +66,7 @@ def index():
 
 @app.get("/join")
 def join_form():
-    return render_template("join.html", services=SERVICES, form={})
+    return render_template("join.html", services=all_services(), form={})
 
 
 @app.post("/join")
@@ -88,28 +76,44 @@ def join():
     email = form.get("email", "").strip().lower()
     service_id = form.get("service_id", type=int)
     pages = form.get("pages", type=int)
-    rush = form.get("rush") == "yes"
+    is_rush = form.get("rush") == "yes"
+    service = db.session.get(Service, service_id) if service_id else None
 
     errors = {}
     if not name:
         errors["name"] = "Enter your name."
+    elif len(name) > 80:
+        errors["name"] = "Your name must be 80 characters or fewer."
     if "@" not in email:
         errors["email"] = "Enter a valid email address."
-    if service_id not in [s["id"] for s in SERVICES]:
+    elif len(email) > 120:
+        errors["email"] = "Your email must be 120 characters or fewer."
+    if service is None:
         errors["service_id"] = "Choose a service."
     if pages is None or not 1 <= pages <= 1000:
         errors["pages"] = "Enter the number of pages, from 1 to 1000."
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
-        return render_template("join.html", services=SERVICES, form=form, errors=errors), 400
+        return render_template("join.html", services=all_services(), form=form, errors=errors), 400
 
-    number = TICKETS[-1]["number"] + 1 if TICKETS else 1
-    TICKETS.append({"number": number, "name": name, "email": email,
-                    "service_id": service_id, "pages": pages, "rush": rush,
-                    "status": "waiting"})
-    flash(f"You joined the queue. Your ticket is #{number}.", "success")
-    return redirect(url_for("ticket", ticket_id=number))
+    # A returning student reuses her account and gets a new ticket
+    user = db.session.scalar(db.select(User).filter_by(email=email))
+    if user is None:
+        user = User(name=name, email=email)
+
+    ticket = Ticket(user=user, service=service, pages=pages, is_rush=is_rush)
+    db.session.add(ticket)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash("You already have a ticket for this service. Check My place instead of joining again.",
+              "warning")
+        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+
+    flash(f"You joined the queue. Your ticket is #{ticket.id}.", "success")
+    return redirect(url_for("ticket", ticket_id=ticket.id))
 
 
 @app.get("/staff")
