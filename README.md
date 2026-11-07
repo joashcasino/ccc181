@@ -1,7 +1,10 @@
 # KopyaQ
 
-KopyaQ is a queue system for a printing and photocopy shop near MSU-IIT. Students join the line from their phone, see their place and estimated wait, and come back when called, while staff manage the line from a dashboard. The staff dashboard has no login yet; that comes in a later week. The staff dashboard has no login yet; that comes in a later week.
+KopyaQ is a queue system for a printing and photocopy shop near MSU-IIT. Students join the line from their phone, see their place and estimated wait, and come back when called, while staff manage the line from a dashboard. The staff dashboard has no login yet; that comes in a later week. 
 
+## Requirements
+
+See [docs/requirements.md](docs/requirements.md).
 
 ## How to run
 
