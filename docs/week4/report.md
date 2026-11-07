@@ -174,11 +174,11 @@ Five tickets across four services (served, called, left and two waiting) were id
 
 ## 11. Reflection
 
-**Hardest this week:** After collecting feedback from print shop owners and students, I found it difficult to implement features from the new and updated Functional Requirements (FRs), as well as update the code and test the changes. 
+**Hardest this week:** After collecting feedback from students who print near campus, I found it difficult to implement the new and updated functional requirements, as well as update the code and test the changes. 
 
-**Hardest requirement to make testable:** FR-08, it was hard during migration and I have to test its query, as well as checking its onw crud of its own. I tested in during part 10, found bug where a switched-off service can still join, and fixed it.
+**Hardest requirement to make testable:** FR-08, it was hard during migration and I have to test its query, as well as checking  crud of its own. I tested it during part 10, found bug where a switched-off service can still join, and fixed it.
 
-**A report Ate Joy would want:** [One report from this data, for example how many students left before being served, per service, per day (FR-14). I will write this query in Week 5.]
+**A report Ate Joy would want:** The busiest hours of the day for each service, so she knows when to ask a helper to watch the counter. I will write this query in Week 5 using `created_at` and `service_id`.
 
 ## 12. Declaration
 
