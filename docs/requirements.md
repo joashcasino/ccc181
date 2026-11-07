@@ -17,10 +17,10 @@
 | FR-05 | A staff member can filter the dashboard by service. | Should | No | Built (Week 3) |
 | FR-06 ★ | A staff member can see the estimated minutes of work waiting, computed from each ticket's pages and each service's minutes per page. | Should | **Yes** | Built (Week 3) |
 | FR-07 | A customer can leave the queue before being served. | Must | **Yes** | Built (Week 3) |
-| FR-08 | A staff member can add a service, change its name and minutes per page, and switch it off (for example, when the colored printer runs out of ink), and a switched-off service does not appear on the join form. | Must | **Yes** | This week |
+| FR-08 | A staff member can add a service, change its name and minutes per page, and switch it off (for example, when the colored printer runs out of ink), and a switched-off service does not appear on the join form. | Must | **Yes** | Built (Week 4) |
 | FR-09 ★ | A staff member can see which tickets are rush jobs, labelled on the dashboard. | Should | **Yes** | Built (Week 3) |
-| FR-10 | A staff member can see the time each ticket joined on the dashboard, and a customer can see it on My place. | Should | **Yes** | This week |
-| FR-11 | A staff member can delete a ticket that was created by mistake, after confirming. | Should | **Yes** | This week |
+| FR-10 | A staff member can see the time each ticket joined on the dashboard, and a customer can see it on My place. | Should | **Yes** | Built (Week 4) |
+| FR-11 | A staff member can delete a ticket that was created by mistake, after confirming. | Should | **Yes** | Built (Week 4) |
 | FR-12 ★ | A staff member can mark a job as ready for pickup, and the customer sees "Ready for pickup" on My place. | Should | **Yes** | Later |
 | FR-13 ★ | A customer can choose the paper size (Short, Long or A4) when joining. | Could | **Yes** | Later |
 | FR-14 | A staff member can see how many customers left before being served, per service, per day. | Should | **Yes** | Later |
