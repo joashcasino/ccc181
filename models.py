@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, false, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, false, func, text, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 db = SQLAlchemy()
@@ -31,6 +31,7 @@ class Service(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(60), unique=True)
     minutes_per_page: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=1, server_default="1")
+    active: Mapped[bool] = mapped_column(default=True, server_default=true())
 
     tickets: Mapped[list["Ticket"]] = relationship(back_populates="service")
 
