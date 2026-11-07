@@ -57,9 +57,6 @@ def seed():
     db.session.commit()
     print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
 
-    print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
-
-
 def all_services():
     """Every service, A to Z. Used by the join form and the staff pages."""
     return db.session.scalars(db.select(Service).order_by(Service.name)).all()
@@ -75,10 +72,6 @@ def people_ahead(t):
         )
     )
 
-
-def find_ticket(ticket_id):
-    """Return the ticket with this number, or None."""
-    return next((t for t in TICKETS if t["number"] == ticket_id), None)
 
 @app.route("/")
 
@@ -164,28 +157,61 @@ def staff_dashboard():
 @app.post("/staff/call-next")
 def call_next():
     service_id = request.form.get("service_id", type=int)
-    waiting = [t for t in TICKETS if t["status"] == "waiting"
-               and (not service_id or t["service_id"] == service_id)]
-    if waiting:
-        t = waiting[0]
-        t["status"] = "called"
-        flash(f"Called ticket #{t['number']} ({t['name']}).", "info")
+    # Week 3 usability test: don't call another student for a service while
+    # someone for that service is still at the counter
+    busy = db.select(Ticket.service_id).where(Ticket.status == "called")
+    query = (
+        db.select(Ticket)
+        .where(Ticket.status == "waiting", Ticket.service_id.not_in(busy))
+        .order_by(Ticket.created_at)
+        .limit(1)
+    )
+    if service_id:
+        query = query.where(Ticket.service_id == service_id)
+    t = db.session.scalar(query)
+    if t is None:
+        flash("No one can be called right now. Either no one is waiting, or the person "
+              "already called must be served or marked no-show first.", "warning")
     else:
-        flash("No one is waiting.", "warning")
+        t.status = "called"
+        t.called_at = func.now()
+        db.session.commit()
+        flash(f"Called ticket #{t.id} ({t.user.name}).", "info")
     return redirect(url_for("staff_dashboard", service_id=service_id))
+
+ACTIONS = {"call": "called", "serve": "served", "no-show": "no-show"}
+ALLOWED_FROM = {
+    "call": ("waiting",),
+    "serve": ("waiting", "called"),
+    "no-show": ("waiting", "called"),
+}
 
 
 @app.post("/staff/tickets/<int:ticket_id>/<action>")
 def staff_action(ticket_id, action):
-    new_status = {"call": "called", "serve": "served", "no-show": "no-show"}.get(action)
-    t = find_ticket(ticket_id)
-    if t is None or new_status is None:
+    new_status = ACTIONS.get(action)
+    if new_status is None:
         abort(404)
-    t["status"] = new_status
-    flash(f"Ticket #{ticket_id} marked {new_status}.", "info")
+    t = db.get_or_404(Ticket, ticket_id)
+    if t.status not in ALLOWED_FROM[action]:
+        flash(f"Ticket #{t.id} is already {t.status}.", "warning")
+    else:
+        t.status = new_status
+        if new_status == "called":
+            t.called_at = func.now()
+        db.session.commit()
+        flash(f"Ticket #{t.id} marked {new_status}.", "info")
     return redirect(url_for("staff_dashboard",
                             service_id=request.form.get("service_id", type=int)))
 
+@app.post("/staff/tickets/<int:ticket_id>/delete")
+def delete_ticket(ticket_id):
+    t = db.get_or_404(Ticket, ticket_id)
+    db.session.delete(t)
+    db.session.commit()
+    flash(f"Ticket #{ticket_id} was deleted.", "warning")
+    return redirect(url_for("staff_dashboard",
+                            service_id=request.form.get("service_id", type=int)))
 
 @app.get("/queue/<int:ticket_id>")
 def ticket(ticket_id):
@@ -202,9 +228,10 @@ def ticket_status(ticket_id):
 @app.post("/queue/<int:ticket_id>/leave")
 def leave(ticket_id):
     t = db.get_or_404(Ticket, ticket_id)
-    if t.status in ("waiting", "called"):
-        t["status"] = "left"
-        flash(f"You left the queue. Ticket #{ticket_id} is cancelled.", "info")
+    if t.status == "waiting":
+        t.status = "left"  # soft delete: the row stays for FR-14 reports
+        db.session.commit()
+    flash("You left the queue.", "info")
     return redirect(url_for("index"))
 
 
