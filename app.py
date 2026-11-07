@@ -6,6 +6,7 @@ then open http://127.0.0.1:5000
 """
 import math
 import os
+from decimal import Decimal
 
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
@@ -24,6 +25,26 @@ app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO") == "1"
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+SEED_SERVICES = [
+    ("Print (black and white)", "0.2"),
+    ("Print (colored)", "0.5"),
+    ("Photocopy", "0.1"),
+    ("Binding / lamination", "3"),
+]
+
+
+@app.cli.command("seed")
+def seed():
+    """Add the shop's services. Safe to run more than once."""
+    added = 0
+    for name, minutes in SEED_SERVICES:
+        exists = db.session.scalar(db.select(Service).where(Service.name == name))
+        if exists is None:
+            db.session.add(Service(name=name, minutes_per_page=Decimal(minutes)))
+            added += 1
+    db.session.commit()
+    print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
 
 # Sample data. Week 4 moves this into PostgreSQL.
 SERVICES = [
