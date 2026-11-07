@@ -6,11 +6,11 @@
 | --- | --- |
 | **App** | KopyaQ |
 | **Setting** | A printing and photocopy shop near MSU-IIT |
-| **Name** | [Full name] |
-| **Student ID** | [ID] |
-| **Section** | [Section] |
-| **Date** | [YYYY-MM-DD] |
-| **Pull request** | [link to the PR, e.g. https://github.com/joashcasino/ccc181/pull/2] |
+| **Name** | Joash S. Casiño |
+| **Student ID** | 2023-0857 |
+| **Section** | CS3A |
+| **Date** | 2026-10-26 |
+| **Pull request** | https://github.com/joashcasino/ccc181/compare/feature/week3-interface?expand=1 |
 
 ## 2. Personas
 
@@ -53,9 +53,9 @@ Full results: [accessibility.md](accessibility.md).
 
 | Screen | Lighthouse (Mobile) |
 | --- | --- |
-| Join | [ ] |
-| My place | [ ] |
-| Staff dashboard | [ ] |
+| Join | 100% |
+| My place | 100% |
+| Staff dashboard | 100% |
 
 **Most important fix:** the Serve, No-show and filter buttons were about 31 px tall on a phone. I added CSS so they are at least 44 × 44 px below 768 px wide, which makes them easier for Ate Joy to tap with paper in her hands.
 
@@ -65,11 +65,11 @@ Full notes: [usability-test.md](usability-test.md).
 
 | Task | Finished? | Time | Main observation |
 | --- | --- | --- | --- |
-| 1. Join the queue | | | |
-| 2. Find number and people ahead | | | |
-| 3. Call next and serve (as staff) | | | |
+| 1. Join the queue | [ ] | [ ] | [ ] |
+| 2. Find number and people ahead | [ ] | [ ] | [ ] |
+| 3. Call next and serve (as staff) | [ ] | [ ] | Call next can call several students at once, so someone called after a 50-page job ends up waiting at the counter. |
 
-**Improvement:** Problem: On a phone, the Serve, No-show and filter buttons were only about 31 px tall, so Ate Joy could easily tap the wrong one with paper in her hands. Fix: I added a CSS rule in static/css/style.css that makes these buttons at least 44 × 44 px on screens below 768 px wide.
+**Improvement:** On a phone, the Serve, No-show and filter buttons were only about 31 px tall, so Ate Joy could easily tap the wrong one with paper in her hands. I added a CSS rule in `static/css/style.css` that makes these buttons at least 44 × 44 px on screens below 768 px wide.
 
 | Before | After |
 | --- | --- |
@@ -77,16 +77,15 @@ Full notes: [usability-test.md](usability-test.md).
 
 ## 8. Reflection
 
-**Hardest this week:** [your own words]
+**Hardest this week:** The hardest part of this activity was finding someone willing to test the app and give honest feedback, especially someone who is used to lining up the traditional way rather than using an app. It showed me that my real users may need the app to be even simpler than I expected. I also used Claude to work faster, but I noticed I had become rusty at coding by hand, so I made sure I could read and explain every part before committing it.
 
 **What I will change when the data moves to PostgreSQL in Week 4:**
 - Ticket numbers will come from the database instead of `TICKETS[-1]["number"] + 1`, so two students joining at the same moment cannot get the same number.
 - The `find_ticket` helper and the "people ahead" count will become database queries.
 - Tickets will keep their full history (served, no-show, left), so Ate Joy can see how many jobs each service handled in a day.
-- [anything else you noticed]
+- Call next should not call another student while someone is still being served. My usability test showed that calling several students at once makes them wait at the counter behind a large job.
 
 ## 9. Declaration
 
 - **Claude (Anthropic):** brainstorming the setting, drafting personas and the self-review for me to edit, editing wireframes in Figma through the Figma connector, drafting code for Parts 4 to 8, debugging, and drafting this report's structure. I reviewed, tested and can explain all of it.
 - **Bootstrap 5.3** (CSS and JavaScript from jsDelivr) and the course's ClinicQ starter and code snippets.
-- [any other tools or sources, e.g. icon sites]
