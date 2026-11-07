@@ -17,7 +17,7 @@ I gave one task at a time, asked them to think aloud, and did not help.
 
 | | |
 | --- | --- |
-| **Finished?** yes|
+| **Finished?** | yes |
 | **Time** | about 45 seconds |
 | **Where they hesitated** | asked if a front-and-back page counts as one or two |
 | **What they said** | "Do I count the pages or the sheets?" |
@@ -48,9 +48,9 @@ I gave one task at a time, asked them to think aloud, and did not help.
 
 ## 10b. One improvement
 
-**Problem:** [The most serious problem found, from this test, my self-review, or the accessibility check. Say who it affects and which usability principle it breaks.]
+**Problem:** On a phone, the Serve, No-show and filter buttons on the staff dashboard were only about 31 px tall, so Ate Joy could tap the wrong one with paper in her hands. This breaks the error prevention principle.
 
-**Fix:** [What I changed in the code, and which file.]
+**Fix:** I added a CSS rule in `static/css/style.css` that makes these buttons at least 44 × 44 px on screens below 768 px wide.
 
 | Before | After |
 | --- | --- |

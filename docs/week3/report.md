@@ -10,7 +10,7 @@
 | **Student ID** | 2023-0857 |
 | **Section** | CS3A |
 | **Date** | 2026-10-26 |
-| **Pull request** | https://github.com/joashcasino/ccc181/compare/feature/week3-interface?expand=1 |
+| **Pull request** | https://github.com/joashcasino/ccc181/pull/3 |
 
 ## 2. Personas
 
@@ -65,11 +65,11 @@ Full notes: [usability-test.md](usability-test.md).
 
 | Task | Finished? | Time | Main observation |
 | --- | --- | --- | --- |
-| 1. Join the queue | [ ] | [ ] | [ ] |
-| 2. Find number and people ahead | [ ] | [ ] | [ ] |
-| 3. Call next and serve (as staff) | [ ] | [ ] | Call next can call several students at once, so someone called after a 50-page job ends up waiting at the counter. |
+| 1. Join the queue | Yes | About 45 seconds | Asked whether a front-and-back page counts as one page or two |
+| 2. Find number and people ahead | Yes | About 1 minute | Read her number (7) and people ahead (2) without hesitating |
+| 3. Call next and serve (as staff) | With help | About 10 seconds | Call next can call several students at once, so someone called after a 50-page job ends up waiting at the counter. |
 
-**Improvement:** On a phone, the Serve, No-show and filter buttons were only about 31 px tall, so Ate Joy could easily tap the wrong one with paper in her hands. I added a CSS rule in `static/css/style.css` that makes these buttons at least 44 × 44 px on screens below 768 px wide.
+**Improvement:** On a phone, the Serve, No-show and filter buttons were only about 31 px tall,
 
 | Before | After |
 | --- | --- |

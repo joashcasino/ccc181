@@ -43,6 +43,7 @@
           <th scope="col">Name</th>
           <th scope="col">Service</th>
           <th scope="col">Pages</th>
+          <th scope="col">Joined</th>
           <th scope="col">Status</th>
           <th scope="col">Actions</th>
         </tr>
@@ -50,26 +51,27 @@
       <tbody>
         {% for t in queue %}
           <tr class="{{ 'table-success' if t.status == 'called' else '' }}">
-            <th scope="row">{{ t.number }}</th>
+            <th scope="row">{{ t.id }}</th>
             <td>
-              {{ t.name }}
-              {% if t.rush %}<span class="badge text-bg-dark ms-1">RUSH</span>{% endif %}
+              {{ t.user.name }}
+              {% if t.is_rush %}<span class="badge text-bg-dark ms-1">RUSH</span>{% endif %}
             </td>
-            <td>{{ names[t.service_id] }}</td>
+            <td>{{ t.service.name }}</td>
             <td>{{ t.pages }}</td>
+            <td class="text-nowrap">{{ t.created_at|local }}</td>
             <td><span class="badge {{ badge[t.status][1] }}">{{ badge[t.status][0] }}</span></td>
             <td class="text-nowrap">
               <form method="post" class="d-inline"
-                    action="{{ url_for('staff_action', ticket_id=t.number, action='serve') }}">
+                    action="{{ url_for('staff_action', ticket_id=t.id, action='serve') }}">
                 {% if selected %}<input type="hidden" name="service_id" value="{{ selected }}">{% endif %}
                 <button type="submit" class="btn btn-sm btn-success"
-                        aria-label="Mark ticket {{ t.number }} as served">Serve</button>
+                        aria-label="Mark ticket {{ t.id }} as served">Serve</button>
               </form>
               <form method="post" class="d-inline"
-                    action="{{ url_for('staff_action', ticket_id=t.number, action='no-show') }}">
+                    action="{{ url_for('staff_action', ticket_id=t.id, action='no-show') }}">
                 {% if selected %}<input type="hidden" name="service_id" value="{{ selected }}">{% endif %}
                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                        aria-label="Mark ticket {{ t.number }} as no-show">No-show</button>
+                        aria-label="Mark ticket {{ t.id }} as no-show">No-show</button>
               </form>
             </td>
           </tr>

@@ -6,6 +6,8 @@ then open http://127.0.0.1:5000
 """
 import math
 import os
+from datetime import timedelta, timezone
+from decimal import Decimal
 
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
@@ -25,29 +27,58 @@ app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO") == "1"
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# Sample data. Week 4 moves this into PostgreSQL.
-SERVICES = [
-    {"id": 1, "name": "Print (black and white)", "minutes_per_page": 0.2},
-    {"id": 2, "name": "Print (colored)", "minutes_per_page": 0.5},
-    {"id": 3, "name": "Photocopy", "minutes_per_page": 0.1},
-    {"id": 4, "name": "Binding / lamination", "minutes_per_page": 3},
+PH_TIME = timezone(timedelta(hours=8))
+
+@app.template_filter("local")
+def local_time(value):
+    """Show a UTC time from the database in Philippine time, e.g. Oct 26, 08:01 AM."""
+    if not value:
+        return ""
+    return value.astimezone(PH_TIME).strftime("%b %d, %I:%M %p")
+
+
+SEED_SERVICES = [
+    ("Print (black and white)", "0.2"),
+    ("Print (colored)", "0.5"),
+    ("Photocopy", "0.1"),
+    ("Binding / lamination", "3"),
 ]
 
-# Each ticket: number, name, email, service_id, pages, rush, status
-# status is one of: waiting, called, served, no-show
-TICKETS = [
-    {"number": 1, "name": "Ana", "email": "ana@g.msuiit.edu.ph", "service_id": 1,
-     "pages": 25, "rush": False, "status": "waiting"},
-    {"number": 2, "name": "Ben", "email": "ben@g.msuiit.edu.ph", "service_id": 2,
-     "pages": 4, "rush": True, "status": "waiting"},
-    {"number": 3, "name": "Cara", "email": "cara@g.msuiit.edu.ph", "service_id": 4,
-     "pages": 1, "rush": False, "status": "waiting"},
-]
+
+@app.cli.command("seed")
+def seed():
+    """Add the shop's services. Safe to run more than once."""
+    added = 0
+    for name, minutes in SEED_SERVICES:
+        exists = db.session.scalar(db.select(Service).where(Service.name == name))
+        if exists is None:
+            db.session.add(Service(name=name, minutes_per_page=Decimal(minutes)))
+            added += 1
+    db.session.commit()
+    print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
+
+    print(f"Seed done: {added} added, {len(SEED_SERVICES) - added} already there.")
+
+
+def all_services():
+    """Every service, A to Z. Used by the join form and the staff pages."""
+    return db.session.scalars(db.select(Service).order_by(Service.name)).all()
+
+
+def people_ahead(t):
+    """How many tickets for the same service are waiting and joined before t."""
+    return db.session.scalar(
+        db.select(func.count(Ticket.id)).where(
+            Ticket.service_id == t.service_id,
+            Ticket.status == "waiting",
+            Ticket.created_at < t.created_at,
+        )
+    )
+
 
 def find_ticket(ticket_id):
     """Return the ticket with this number, or None."""
     return next((t for t in TICKETS if t["number"] == ticket_id), None)
-
 
 @app.route("/")
 
@@ -57,7 +88,7 @@ def index():
 
 @app.get("/join")
 def join_form():
-    return render_template("join.html", services=SERVICES, form={})
+    return render_template("join.html", services=all_services(), form={})
 
 
 @app.post("/join")
@@ -67,44 +98,65 @@ def join():
     email = form.get("email", "").strip().lower()
     service_id = form.get("service_id", type=int)
     pages = form.get("pages", type=int)
-    rush = form.get("rush") == "yes"
+    is_rush = form.get("rush") == "yes"
+    service = db.session.get(Service, service_id) if service_id else None
 
     errors = {}
     if not name:
         errors["name"] = "Enter your name."
+    elif len(name) > 80:
+        errors["name"] = "Your name must be 80 characters or fewer."
     if "@" not in email:
         errors["email"] = "Enter a valid email address."
-    if service_id not in [s["id"] for s in SERVICES]:
+    elif len(email) > 120:
+        errors["email"] = "Your email must be 120 characters or fewer."
+    if service is None:
         errors["service_id"] = "Choose a service."
     if pages is None or not 1 <= pages <= 1000:
         errors["pages"] = "Enter the number of pages, from 1 to 1000."
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
-        return render_template("join.html", services=SERVICES, form=form, errors=errors), 400
+        return render_template("join.html", services=all_services(), form=form, errors=errors), 400
 
-    number = TICKETS[-1]["number"] + 1 if TICKETS else 1
-    TICKETS.append({"number": number, "name": name, "email": email,
-                    "service_id": service_id, "pages": pages, "rush": rush,
-                    "status": "waiting"})
-    flash(f"You joined the queue. Your ticket is #{number}.", "success")
-    return redirect(url_for("ticket", ticket_id=number))
+    # A returning student reuses her account and gets a new ticket
+    user = db.session.scalar(db.select(User).filter_by(email=email))
+    if user is None:
+        user = User(name=name, email=email)
+
+    ticket = Ticket(user=user, service=service, pages=pages, is_rush=is_rush)
+    db.session.add(ticket)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash("You already have a ticket for this service. Check My place instead of joining again.",
+              "warning")
+        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+
+    flash(f"You joined the queue. Your ticket is #{ticket.id}.", "success")
+    return redirect(url_for("ticket", ticket_id=ticket.id))
 
 
 @app.get("/staff")
 def staff_dashboard():
     service_id = request.args.get("service_id", type=int)
-    queue = [t for t in TICKETS if t["status"] in ("waiting", "called")]
+    query = (
+        db.select(Ticket)
+        .where(Ticket.status.in_(["waiting", "called"]))
+        .order_by(Ticket.created_at)
+    )
     if service_id:
-        queue = [t for t in queue if t["service_id"] == service_id]
+        query = query.where(Ticket.service_id == service_id)
+    queue = db.session.scalars(query).all()
 
-    # ★ FR-06: estimated work left, from pages and each service's speed
-    per_page = {s["id"]: s["minutes_per_page"] for s in SERVICES}
-    waiting = [t for t in queue if t["status"] == "waiting"]
-    est_minutes = math.ceil(sum(t["pages"] * per_page[t["service_id"]] for t in waiting))
+    # ★ FR-06: estimated work left, computed from pages and each service's speed, never stored
+    waiting = [t for t in queue if t.status == "waiting"]
+    est_minutes = math.ceil(sum(t.pages * t.service.minutes_per_page for t in waiting))
 
-    names = {s["id"]: s["name"] for s in SERVICES}
-    return render_template("staff.html", queue=queue, services=SERVICES, names=names,
+    services = all_services()
+    names = {s.id: s.name for s in services}
+    return render_template("staff.html", queue=queue, services=services, names=names,
                            selected=service_id, waiting_count=len(waiting),
                            est_minutes=est_minutes)
 
@@ -137,34 +189,20 @@ def staff_action(ticket_id, action):
 
 @app.get("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    ahead = [x for x in TICKETS
-             if x["service_id"] == t["service_id"]
-             and x["status"] == "waiting"
-             and x["number"] < t["number"]]
-    service = next(s for s in SERVICES if s["id"] == t["service_id"])
-    return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
+    t = db.get_or_404(Ticket, ticket_id)
+    return render_template("ticket.html", ticket=t, service=t.service, ahead=people_ahead(t))
 
 
 @app.get("/queue/<int:ticket_id>/status.json")
 def ticket_status(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    ahead = sum(1 for x in TICKETS
-                if x["service_id"] == t["service_id"]
-                and x["status"] == "waiting" and x["number"] < t["number"])
-    return {"status": t["status"], "ahead": ahead}
+    t = db.get_or_404(Ticket, ticket_id)
+    return {"status": t.status, "ahead": people_ahead(t)}
 
 
 @app.post("/queue/<int:ticket_id>/leave")
 def leave(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    if t["status"] in ("waiting", "called"):
+    t = db.get_or_404(Ticket, ticket_id)
+    if t.status in ("waiting", "called"):
         t["status"] = "left"
         flash(f"You left the queue. Ticket #{ticket_id} is cancelled.", "info")
     return redirect(url_for("index"))
