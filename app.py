@@ -6,6 +6,7 @@ then open http://127.0.0.1:5000
 """
 import math
 import os
+from datetime import timedelta, timezone
 from decimal import Decimal
 
 from dotenv import load_dotenv
@@ -25,6 +26,16 @@ app.config["SQLALCHEMY_ECHO"] = os.environ.get("SQLALCHEMY_ECHO") == "1"
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
+PH_TIME = timezone(timedelta(hours=8))
+
+@app.template_filter("local")
+def local_time(value):
+    """Show a UTC time from the database in Philippine time, e.g. Oct 26, 08:01 AM."""
+    if not value:
+        return ""
+    return value.astimezone(PH_TIME).strftime("%b %d, %I:%M %p")
+
 
 SEED_SERVICES = [
     ("Print (black and white)", "0.2"),
@@ -52,6 +63,17 @@ def seed():
 def all_services():
     """Every service, A to Z. Used by the join form and the staff pages."""
     return db.session.scalars(db.select(Service).order_by(Service.name)).all()
+
+
+def people_ahead(t):
+    """How many tickets for the same service are waiting and joined before t."""
+    return db.session.scalar(
+        db.select(func.count(Ticket.id)).where(
+            Ticket.service_id == t.service_id,
+            Ticket.status == "waiting",
+            Ticket.created_at < t.created_at,
+        )
+    )
 
 
 def find_ticket(ticket_id):
@@ -119,17 +141,22 @@ def join():
 @app.get("/staff")
 def staff_dashboard():
     service_id = request.args.get("service_id", type=int)
-    queue = [t for t in TICKETS if t["status"] in ("waiting", "called")]
+    query = (
+        db.select(Ticket)
+        .where(Ticket.status.in_(["waiting", "called"]))
+        .order_by(Ticket.created_at)
+    )
     if service_id:
-        queue = [t for t in queue if t["service_id"] == service_id]
+        query = query.where(Ticket.service_id == service_id)
+    queue = db.session.scalars(query).all()
 
-    # ★ FR-06: estimated work left, from pages and each service's speed
-    per_page = {s["id"]: s["minutes_per_page"] for s in SERVICES}
-    waiting = [t for t in queue if t["status"] == "waiting"]
-    est_minutes = math.ceil(sum(t["pages"] * per_page[t["service_id"]] for t in waiting))
+    # ★ FR-06: estimated work left, computed from pages and each service's speed, never stored
+    waiting = [t for t in queue if t.status == "waiting"]
+    est_minutes = math.ceil(sum(t.pages * t.service.minutes_per_page for t in waiting))
 
-    names = {s["id"]: s["name"] for s in SERVICES}
-    return render_template("staff.html", queue=queue, services=SERVICES, names=names,
+    services = all_services()
+    names = {s.id: s.name for s in services}
+    return render_template("staff.html", queue=queue, services=services, names=names,
                            selected=service_id, waiting_count=len(waiting),
                            est_minutes=est_minutes)
 
@@ -162,34 +189,20 @@ def staff_action(ticket_id, action):
 
 @app.get("/queue/<int:ticket_id>")
 def ticket(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    ahead = [x for x in TICKETS
-             if x["service_id"] == t["service_id"]
-             and x["status"] == "waiting"
-             and x["number"] < t["number"]]
-    service = next(s for s in SERVICES if s["id"] == t["service_id"])
-    return render_template("ticket.html", ticket=t, service=service, ahead=len(ahead))
+    t = db.get_or_404(Ticket, ticket_id)
+    return render_template("ticket.html", ticket=t, service=t.service, ahead=people_ahead(t))
 
 
 @app.get("/queue/<int:ticket_id>/status.json")
 def ticket_status(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    ahead = sum(1 for x in TICKETS
-                if x["service_id"] == t["service_id"]
-                and x["status"] == "waiting" and x["number"] < t["number"])
-    return {"status": t["status"], "ahead": ahead}
+    t = db.get_or_404(Ticket, ticket_id)
+    return {"status": t.status, "ahead": people_ahead(t)}
 
 
 @app.post("/queue/<int:ticket_id>/leave")
 def leave(ticket_id):
-    t = find_ticket(ticket_id)
-    if t is None:
-        abort(404)
-    if t["status"] in ("waiting", "called"):
+    t = db.get_or_404(Ticket, ticket_id)
+    if t.status in ("waiting", "called"):
         t["status"] = "left"
         flash(f"You left the queue. Ticket #{ticket_id} is cancelled.", "info")
     return redirect(url_for("index"))
