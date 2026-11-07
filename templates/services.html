@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Manage services · KopyaQ{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-3">Manage services</h1>
+
+<section class="card mb-4" aria-labelledby="add-heading">
+  <div class="card-body">
+    <h2 id="add-heading" class="h5">Add a service</h2>
+    <form method="post" action="{{ url_for('service_create') }}" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6">
+        <label for="new-name" class="form-label">Name</label>
+        <input id="new-name" name="name" class="form-control" required maxlength="60">
+      </div>
+      <div class="col-6 col-md-3">
+        <label for="new-minutes" class="form-label">Minutes per page</label>
+        <input id="new-minutes" name="minutes_per_page" type="number" class="form-control"
+               required min="0.01" max="999.99" step="0.01" inputmode="decimal">
+      </div>
+      <div class="col-6 col-md-3">
+        <button type="submit" class="btn btn-dark w-100">Add service</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<div class="table-responsive">
+  <table class="table align-middle caption-top">
+    <caption>Services ({{ services|length }})</caption>
+    <thead class="table-light">
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Minutes per page</th>
+        <th scope="col">On join form</th>
+        <th scope="col">Tickets</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in services %}
+        <tr>
+          <td>
+            <label for="name-{{ s.id }}" class="visually-hidden">Name of {{ s.name }}</label>
+            <input id="name-{{ s.id }}" name="name" form="edit-{{ s.id }}" class="form-control"
+                   value="{{ s.name }}" required maxlength="60">
+          </td>
+          <td>
+            <label for="minutes-{{ s.id }}" class="visually-hidden">Minutes per page for {{ s.name }}</label>
+            <input id="minutes-{{ s.id }}" name="minutes_per_page" form="edit-{{ s.id }}"
+                   type="number" class="form-control" value="{{ s.minutes_per_page }}"
+                   required min="0.01" max="999.99" step="0.01" inputmode="decimal">
+          </td>
+          <td>
+            <div class="form-check form-switch">
+              <input id="active-{{ s.id }}" name="active" form="edit-{{ s.id }}" type="checkbox"
+                     class="form-check-input" role="switch" {% if s.active %}checked{% endif %}>
+              <label for="active-{{ s.id }}" class="form-check-label">{{ "On" if s.active else "Off" }}</label>
+            </div>
+          </td>
+          <td>{{ s.tickets|length }}</td>
+          <td class="text-nowrap">
+            <form id="edit-{{ s.id }}" method="post" class="d-inline"
+                  action="{{ url_for('service_edit', service_id=s.id) }}">
+              <button type="submit" class="btn btn-sm btn-success"
+                      aria-label="Save changes to {{ s.name }}">Save</button>
+            </form>
+            <form method="post" class="d-inline"
+                  action="{{ url_for('service_delete', service_id=s.id) }}"
+                  data-confirm="Delete the service {{ s.name }}? This cannot be undone.">
+              <button type="submit" class="btn btn-sm btn-outline-danger"
+                      aria-label="Delete {{ s.name }}">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

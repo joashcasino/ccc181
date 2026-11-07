@@ -7,7 +7,7 @@ then open http://127.0.0.1:5000
 import math
 import os
 from datetime import timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
@@ -62,6 +62,13 @@ def all_services():
     return db.session.scalars(db.select(Service).order_by(Service.name)).all()
 
 
+def active_services():
+    """Services customers can join right now, A to Z (FR-08)."""
+    return db.session.scalars(
+        db.select(Service).where(Service.active.is_(True)).order_by(Service.name)
+    ).all()
+
+
 def people_ahead(t):
     """How many tickets for the same service are waiting and joined before t."""
     return db.session.scalar(
@@ -81,7 +88,7 @@ def index():
 
 @app.get("/join")
 def join_form():
-    return render_template("join.html", services=all_services(), form={})
+    return render_template("join.html", services=active_services(), form={})
 
 
 @app.post("/join")
@@ -103,14 +110,14 @@ def join():
         errors["email"] = "Enter a valid email address."
     elif len(email) > 120:
         errors["email"] = "Your email must be 120 characters or fewer."
-    if service is None:
+    if service is None or not service.active:
         errors["service_id"] = "Choose a service."
     if pages is None or not 1 <= pages <= 1000:
         errors["pages"] = "Enter the number of pages, from 1 to 1000."
 
     if errors:
         flash("Please fix the highlighted fields.", "danger")
-        return render_template("join.html", services=all_services(), form=form, errors=errors), 400
+        return render_template("join.html", services=active_services(), form=form, errors=errors), 400
 
     # A returning student reuses her account and gets a new ticket
     user = db.session.scalar(db.select(User).filter_by(email=email))
@@ -125,7 +132,7 @@ def join():
         db.session.rollback()
         flash("You already have a ticket for this service. Check My place instead of joining again.",
               "warning")
-        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+        return render_template("join.html", services=active_services(), form=form, errors={}), 409
 
     flash(f"You joined the queue. Your ticket is #{ticket.id}.", "success")
     return redirect(url_for("ticket", ticket_id=ticket.id))
@@ -212,6 +219,77 @@ def delete_ticket(ticket_id):
     flash(f"Ticket #{ticket_id} was deleted.", "warning")
     return redirect(url_for("staff_dashboard",
                             service_id=request.form.get("service_id", type=int)))
+
+
+def read_service_form(form):
+    """Clean and check the Manage services form. Returns (name, minutes, error)."""
+    name = form.get("name", "").strip()
+    try:
+        minutes = Decimal(form.get("minutes_per_page", "").strip()).quantize(Decimal("0.01"))
+    except InvalidOperation:
+        minutes = None
+    if not name or len(name) > 60:
+        return name, minutes, "Enter a service name of up to 60 characters."
+    if minutes is None or minutes.is_nan() or not 0 < minutes < 1000:
+        return name, minutes, "Minutes per page must be a number from 0.01 to 999.99."
+    return name, minutes, None
+
+
+@app.get("/staff/services")
+def services_list():
+    return render_template("services.html", services=all_services())
+
+
+@app.post("/staff/services")
+def service_create():
+    name, minutes, error = read_service_form(request.form)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("services_list"))
+    db.session.add(Service(name=name, minutes_per_page=minutes))
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'A service named "{name}" already exists.', "danger")
+        return redirect(url_for("services_list"))
+    flash(f"Added {name}.", "success")
+    return redirect(url_for("services_list"))
+
+
+@app.post("/staff/services/<int:service_id>/edit")
+def service_edit(service_id):
+    s = db.get_or_404(Service, service_id)
+    name, minutes, error = read_service_form(request.form)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("services_list"))
+    s.name = name
+    s.minutes_per_page = minutes
+    s.active = request.form.get("active") == "on"  # an unticked box is not sent at all
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        flash(f'A service named "{name}" already exists.', "danger")
+        return redirect(url_for("services_list"))
+    flash(f"Saved {name}.", "success")
+    return redirect(url_for("services_list"))
+
+
+@app.post("/staff/services/<int:service_id>/delete")
+def service_delete(service_id):
+    s = db.get_or_404(Service, service_id)
+    name = s.name
+    if s.tickets:
+        flash(f"{name} has {len(s.tickets)} ticket(s), so it can't be deleted. "
+              "Switch it off instead to hide it from the join form.", "danger")
+        return redirect(url_for("services_list"))
+    db.session.delete(s)
+    db.session.commit()
+    flash(f"Deleted {name}.", "warning")
+    return redirect(url_for("services_list"))
+
 
 @app.get("/queue/<int:ticket_id>")
 def ticket(ticket_id):
