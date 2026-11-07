@@ -110,7 +110,7 @@ def join():
         errors["email"] = "Enter a valid email address."
     elif len(email) > 120:
         errors["email"] = "Your email must be 120 characters or fewer."
-    if service is None:
+    if service is None or not service.active:
         errors["service_id"] = "Choose a service."
     if pages is None or not 1 <= pages <= 1000:
         errors["pages"] = "Enter the number of pages, from 1 to 1000."
@@ -132,7 +132,7 @@ def join():
         db.session.rollback()
         flash("You already have a ticket for this service. Check My place instead of joining again.",
               "warning")
-        return render_template("join.html", services=all_services(), form=form, errors={}), 409
+        return render_template("join.html", services=active_services(), form=form, errors={}), 409
 
     flash(f"You joined the queue. Your ticket is #{ticket.id}.", "success")
     return redirect(url_for("ticket", ticket_id=ticket.id))
@@ -216,10 +216,6 @@ def delete_ticket(ticket_id):
     t = db.get_or_404(Ticket, ticket_id)
     db.session.delete(t)
     db.session.commit()
-    flash(f"Ticket #{ticket_id} was deleted.", "warning")
-    return redirect(url_for("staff_dashboard",
-                            service_id=request.form.get("service_id", type=int)))
-
     flash(f"Ticket #{ticket_id} was deleted.", "warning")
     return redirect(url_for("staff_dashboard",
                             service_id=request.form.get("service_id", type=int)))
